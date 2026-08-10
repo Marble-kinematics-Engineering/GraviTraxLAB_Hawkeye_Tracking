@@ -71,7 +71,7 @@ For a deep dive into kinematic trajectory equations, spatial coordinate scaling 
 ## 📜 License and Intellectual Property
 
 This code constitutes Appendix 2 of the book published on Amazon KDP and is subject to the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)** license. The complete work and its associated source code are registered with **Safe Creative** under the identifier:
-* **Official Registration (2nd Edition - August 2026): ** 2608066660282
+* **Official Registration (2nd Edition - August 2026):** 2608066660282
 
 Any commercial use or modification of the code without the author's express authorization is prohibited.
 
