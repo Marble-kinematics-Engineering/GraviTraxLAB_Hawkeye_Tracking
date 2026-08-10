@@ -68,6 +68,21 @@ This software serves as the official implementation companion of **Chapter 4** o
 
 For a deep dive into kinematic trajectory equations, spatial coordinate scaling matrix computations ($E = D_{real} / D_{pixel}$), and experimental engineering setups, please refer to the complete printed textbook edition.
 
+## 📜 License and Intellectual Property
+
+This code constitutes Appendix 2 of the book published on Amazon KDP and is subject to the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)** license. The complete work and its associated source code are registered with **Safe Creative** under the identifier:
+* **Official Registration (2nd Edition - August 2026): ** 2608066660282
+
+Any commercial use or modification of the code without the author's express authorization is prohibited.
+
+### 📝 How to cite
+
+If you use this code or base your own academic or technical work on this research, please cite the preprint or the official book:
+
+Hidalgo Fernández, J. (2026). Vector Field of the Velocity in Projectile Motion: Mathematical Modeling and Empirical Validation [Open Researcher and Contributor ID]. ORCID. https://orcid.org/0009-0006-5044-9430
+
+Hidalgo Fernández, J. (2026). Vector Field of the Velocity in Projectile Motion: Mathematical Modeling and Empirical Validation (2nd ed.). Technical Research in Kinematic Engineering. Amazon KDP. https://www.amazon.es/dp/B0H89Y5V37
+
 ## ⚖️ Legal / Trademark Notice
 
 GraviTrax® is a registered trademark of Ravensburger. The experimental setups and physical validations presented in this technical supplement were conducted independently using these track systems as an open laboratory workbench. This academic development is not affiliated with, sponsored, or endorsed by Ravensburger.
