@@ -2,6 +2,10 @@
 
 An automated computer vision tool written in Python and OpenCV to detect, track, and verify marble impacts within a GraviTrax environment with millimeter-level precision.
 
+## ⚙️ Technical Overview
+
+A computer vision algorithm specialized in optical metrology and laboratory instrumentation. The system performs interactive chromatic segmentation in the HSV color space and image binarization to automate the detection of post-air collision impacts.Its main function is the vector calculation of the submillimeter distance from the geometric center of the target (Pad Center Dist), determining, through frame tracking and bounce timestamp analysis, whether the marble's rebound falls within the kinematic tolerances required for the empirical validation of the physical model.
+
 ## 🚀 Features
 
 * **Interactive GUI:** Built-in `tkinter` popups for zero-code parameter initialization.
