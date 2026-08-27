@@ -26,6 +26,30 @@ def request_initial_data():
     marble_color = simpledialog.askstring("Marble Color", "Type the marble color (green, blue, red, grey):").strip().lower() 
     return video_path, marble_color 
 
+def resize_with_aspect_ratio(image, target_size=(640, 480)):
+    """Resize while maintaining the aspect ratio and add black bars (Letterbox)."""
+    target_w, target_h = target_size
+    orig_h, orig_w = image.shape[:2]
+    
+    # Determine the appropriate scale factor
+    scale = min(target_w / orig_w, target_h / orig_h)
+    new_w = int(orig_w * scale)
+    new_h = int(orig_h * scale)
+    
+    # Resize the image symmetrically without stretching it
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    
+    # Create a 640x480 black canvas to center the frame
+    canvas = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+    
+    # Calculate margins to center the video
+    x_offset = (target_w - new_w) // 2
+    y_offset = (target_h - new_h) // 2
+    
+    # Copy the resized video onto the canvas
+    canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
+    return canvas, scale, x_offset, y_offset
+
 # --- SCIENTIFIC CONFIGURATION CONSTANTS --- 
 REAL_MARBLE_DIAMETER_MM = 12.7  # Fixed standard physical marble sizing calibration
 TOLERANCE_THRESHOLD_MM = 5.0    # Success margin for experiment validation
@@ -72,7 +96,7 @@ while True:
         continue 
     
     # Scale frame natively to optimize hardware interface resolution
-    frame = cv2.resize(frame, (640, 480)) 
+    frame, _, _, _ = resize_with_aspect_ratio(frame, (640, 480))
     h_min = cv2.getTrackbarPos("H Min", "Color Calibration") 
     h_max = cv2.getTrackbarPos("H Max", "Color Calibration") 
     s_min = cv2.getTrackbarPos("S Min", "Color Calibration") 
@@ -128,7 +152,7 @@ while True:
     if not ret: break 
     
     current_frame += 1 
-    frame = cv2.resize(frame, (640, 480)) 
+    frame, scale, x_offset, y_offset = resize_with_aspect_ratio(frame, (640, 480))
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) 
     
     if selected_color == "red":
@@ -154,30 +178,46 @@ while True:
     # Store analytical path history parameters
     for c in contours: 
         area = cv2.contourArea(c) 
-        if 5 < area < 2000: 
+        if 2 < area < 3000: 
             ((x, y), radius) = cv2.minEnclosingCircle(c) 
-            if radius > 1: 
+            if radius > 0.5: 
                 position_history.append((x, y, current_frame)) 
                 radius_history.append(radius)
 
 # POST-PROCESSING ENGINE: Metric calculations and manual fine-tuning canvas
 if len(position_history) > 0: 
     # Locate lower bounding impact target via structural path history
-    final_bounce_point = max(position_history, key=lambda p: p) 
+    final_bounce_point = max(position_history, key=lambda p: p[1]) 
     x_pixel_bounce, y_pixel_bounce, bounce_frame_index = final_bounce_point 
     
-    # Automated pixel-to-millimeter scaling based on the median diameter of the marble
+    # --- ASPECT RATIO CORRECTION ---
+    # Recover the actual dimensions of the original video
+    orig_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    orig_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    
+    # Scale factors applied by the resize (640x480)
+    scale_x = orig_width / 640.0
+    scale_y = orig_height / 480.0
+    
+    # Map the measured coordinates back to the actual resolution (square pixels)
+    x_real_bounce = x_pixel_bounce * scale_x
+    y_real_bounce = y_pixel_bounce * scale_y
+    
+    # Re-estimate the marble's radius by scaling it non-uniformly if necessary
     avg_pixel_radius = np.median(radius_history)
-    px_diameter_marble = avg_pixel_radius * 2
-    mm_per_pixel = REAL_MARBLE_DIAMETER_MM / px_diameter_marble  
+    # We assume the contour was measured in compressed space; We correct using the actual X-axis
+    px_diameter_marble_orig = (avg_pixel_radius * 2) * scale_x
+    mm_per_pixel_real = REAL_MARBLE_DIAMETER_MM / px_diameter_marble_orig
     
     exact_seconds = bounce_frame_index / fps 
     cap.set(cv2.CAP_PROP_POS_FRAMES, bounce_frame_index - 1) 
     _, base_impact_frame = cap.read() 
     
     if base_impact_frame is not None: 
-        base_impact_frame = cv2.resize(base_impact_frame, (640, 480)) 
-        angle_deg = 45 
+        # Store the original dimensions for accurate mathematical calculations
+        # The visual scaling below is maintained for UI purposes only
+        base_impact_frame, _, _, _ = resize_with_aspect_ratio(base_impact_frame, (640, 480))
+        angle_deg = 45
         
         print("\n=== MANUAL ALIGNMENT ASSISTANT ACTIVE ===")
         print("Center the yellow crosshair onto the physical landing pad surface:")
@@ -231,9 +271,13 @@ if len(position_history) > 0:
             elif key == 13 or key == 141: # Enter key codes
                 break
 
-        # Apply Euclidean 2D distance algorithms between user verified coordinates
-        distance_pixels = np.sqrt((x_pixel_bounce - piece_center_x)**2 + (y_pixel_bounce - piece_center_y)**2)
-        distance_mm = distance_pixels * mm_per_pixel 
+        # Map the center of the user-adjusted piece to the actual space in the video
+        piece_center_x_real = piece_center_x * scale_x
+        piece_center_y_real = piece_center_y * scale_y
+
+        # Apply the actual Euclidean distance to undistorted pixels
+        distance_pixels_real = np.sqrt((x_real_bounce - piece_center_x_real)**2 + (y_real_bounce - piece_center_y_real)**2)
+        distance_mm = distance_pixels_real * mm_per_pixel_real
 
         # Build graphical overlay indicators
         within_range = 0.0 <= distance_mm <= 0.5 
