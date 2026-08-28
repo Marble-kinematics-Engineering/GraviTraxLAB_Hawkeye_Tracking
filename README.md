@@ -1,4 +1,4 @@
-# 🎯 GraviTraxLAB Hawk-Eye: Automated Trajectory Tracking
+# 🏆 GraviTraxLAB Hawk-Eye: Automated Trajectory Tracking
 
 An automated computer vision tool written in Python and OpenCV to detect, track, and verify marble impacts within a GraviTrax environment with millimeter-level precision.
 
@@ -12,8 +12,9 @@ A computer vision algorithm specialized in optical metrology and laboratory inst
 * **Real-Time HSV Calibration:** Dynamic trackbars to isolate green, blue, red, or metallic grey marbles.
 * **Geometric Core Isolation:** Automated 25% circular mask centering to eliminate external plastic track reflections and highlights.
 * **Intelligent Auto-Scaling:** Computer vision engine that calibrates the spatial pixel-to-millimeter ratio in real time using the physical 12.7 mm marble diameter as an absolute metric anchor.
-* **Interactive Precision Crosshair:** Real-time keyboard-driven adjustment matrix to align the structural pad origin center down to a single pixel.
-* **Instant "Hawk-Eye" Analytics:** Automated discovery of the impact bounce frame, rendering vector trajectory lines and validation triggers.
+* **Precision Dual-Alignment Canvas:** Keyboard-driven matrix to adjust the target origin center, coupled with a secondary independent dashed auxiliary line (Numpad 8,2,4,6 | 7,9) to align structural interlocking rail slot bounds without external instruments.
+* **Interactive Empirical Refinement:** Live manual radius fine-tuning (U/I keys) allowing operators to fit the tracking circle perimeter perfectly over the marble or piece geometry to ensure unalterable conversion baselines.
+* **Instant "Hawk-Eye" Analytics:** Automated discovery of the impact bounce frame, rendering vector trajectory lines and validation triggers under an expanded full-viewport crosshair configuration.
 
 ## 🛠️ Installation
 
@@ -37,12 +38,26 @@ pip install opencv-python numpy
 
 ### 🎮 Manual Crosshair Alignment Controls
 
-Once the video analytics processing finishes, the viewport will pause at the impact frame. Use your keyboard to align the yellow crosshair onto the precise geometric center of your landing pad:
+Once the video analytics processing finishes, the viewport will pause at the impact frame. Use your keyboard layout to align the references over the target surface:
+* **W / S / A / D:** Move yellow crosshair center dynamically (Up / Down / Left / Right).
+* **Q / E:** Rotate yellow crosshair diagonal axes orientation orientation.
+* **Numpad 8 / 2 / 4 / 6:** Move the independent dashed auxiliary alignment line (Up / Down / Left / Right).
+* **Numpad 7 / 9:** Rotate the independent dashed auxiliary alignment line orientation.
+* **U / I:** Shrink (-) or expand (+) the tracking circle radius to fit physical bounding dimensions.
+* **ENTER:** Confirm structural scaling positioning parameters and compute the final physical metrics.
 
-* **W / S:** Move crosshair center vertically (Up / Down).
-* **A / D:** Move crosshair center horizontally (Left / Right).
-* **Q / E:** Rotate crosshair diagonal lines orientation.
-* **ENTER:** Confirm structural positioning and compute the final physical metrics.
+### 🎯 Empirical Calibration Methodology
+
+Under high-speed tracking environments, motion blur or frame occlusion may prevent a clear, sharp visual capture of the physical marble at the exact impact timestamp. To overcome this computer vision limitation and achieve sub-millimeter precision, leverage the static geometric proportions of the GraviTrax® base:
+
+1. **Structural Reference:** The standard hexagonal tile side measures exactly 2*sqrt(3) ~ 3.46 cm.
+2. **Visual Alignment:** Use the 'U' and 'I' keys to dynamically scale the white calibration circumference.
+3. **Gauge Limit:** Expand the radius until the boundary aligns perfectly with the midpoint of the physical rail interlocking slots on the green landing pad. This spatial ratio override guarantees an unalterable pixel-to-millimeter conversion baseline, matching the official 12.7 mm standard marble diameter.
+
+### 👤💬 Author Notes: Interactive vs. Automated CV Methods
+
+The ideal paradigm in high-level computer vision systems should always aspire to zero human interaction (Zero-UI). Mandating operators to manually align coordinates via crosshairs, auxiliary lines, and scaling boundaries inherently introduces experimental vulnerabilities, such as parallax error or subjective frame interpretation. 
+This standalone release operates intentionally as an Operator-Assisted Calibration Environment. While fully automated systems provide faster static computation, they fail when hardware video recordings suffer from off-center lens placement, non-uniform tiling orientations, or dynamic ambient shadows. By employing the operator's eye to bridge these visual gaps and verify geometric boundary constraints, this manual fine-tuning workflow ensures strict mathematical repeatability across diverse laboratory setups, preserving the core empirical foundation of the scientific method.
 
 ## 🎲 Quick Calibration Cheat Sheet
 
@@ -57,7 +72,7 @@ If you prefer to bypass manual trackbar exploration, utilize these optimized ref
 
 *Note: Always ensure that the green tracks and structural elements turn completely black, leaving only your moving marble isolated as a solid white tracking node.*
 
-### 🪵 Understanding the HSV Color Space
+### 📋 Understanding the HSV Color Space
 
 Unlike standard RGB hardware models, this computer vision framework operates entirely within the **HSV** color spectrum. This mathematical separation insulates the detection algorithms from environmental light fluctuations and shadows:
 
