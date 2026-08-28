@@ -50,6 +50,30 @@ def resize_with_aspect_ratio(image, target_size=(640, 480)):
     canvas[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
     return canvas, scale, x_offset, y_offset
 
+def draw_dashed_line(img, pt1, pt2, color, thickness=1, dash_length=8):
+    """Draw a dashed (intermittent) line between two points in OpenCV"""
+    x1, y1 = pt1
+    x2, y2 = pt2
+    distance = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    if distance == 0:
+        return
+    
+    # Calculate unit direction vectors
+    dx, dy = (x2 - x1) / distance, (y2 - y1) / distance
+    current_dist = 0
+    
+    while current_dist < distance:
+        start_x = int(x1 + dx * current_dist)
+        start_y = int(y1 + dy * current_dist)
+        end_dist = min(current_dist + dash_length, distance)
+        end_x = int(x1 + dx * end_dist)
+        end_y = int(y1 + dy * end_dist)
+        
+        # Draw solid segment
+        cv2.line(img, (start_x, start_y), (end_x, end_y), color, thickness)
+        # Advance the solid section plus the empty space (gap)
+        current_dist += dash_length * 2
+
 # --- SCIENTIFIC CONFIGURATION CONSTANTS --- 
 REAL_MARBLE_DIAMETER_MM = 12.7  # Fixed standard physical marble sizing calibration
 TOLERANCE_THRESHOLD_MM = 5.0    # Success margin for experiment validation
@@ -218,6 +242,13 @@ if len(position_history) > 0:
         # The visual scaling below is maintained for UI purposes only
         base_impact_frame, _, _, _ = resize_with_aspect_ratio(base_impact_frame, (640, 480))
         angle_deg = 45
+        # --- NEW FEATURE: Interactive radio for visual calibration ---
+        user_adjusted_radius = avg_pixel_radius  
+
+        # --- NUEVAS VARIABLES: Posición y ángulo de la línea auxiliar ---
+        aux_line_x = int(width / 2)
+        aux_line_y = int(height / 2)
+        aux_line_angle = 0
         
         print("\n=== MANUAL ALIGNMENT ASSISTANT ACTIVE ===")
         print("Center the yellow crosshair onto the physical landing pad surface:")
@@ -225,6 +256,7 @@ if len(position_history) > 0:
         print("Q/E: Rotate Crosshair Lines Orientation")
         print("ENTER: Confirm Positioning and Compute Final Metrics\n")
         
+        # ENTER: Confirm Positioning and Compute Final Metrics
         # Interactive keyboard correction loop
         while True:
             impact_frame = base_impact_frame.copy()
@@ -232,7 +264,7 @@ if len(position_history) > 0:
             # Map trigonometric vector parameters to allow crosshair rotations
             rad = np.radians(angle_deg)
             cos_a, sin_a = np.cos(rad), np.sin(rad)
-            length = int(piece_radius * 0.8)
+            length = int(piece_radius * 1.6)
             
             # Draw diagonal axis vector 1
             p1_x = int(piece_center_x - length * cos_a)
@@ -246,34 +278,81 @@ if len(position_history) > 0:
             p3_y = int(piece_center_y - length * np.sin(rad2))
             p4_x = int(piece_center_x + length * np.cos(rad2))
             p4_y = int(piece_center_y + length * np.sin(rad2))
+
+            # --- TRIGONOMETRIC CALCULATION OF THE INDEPENDENT AUXILIARY LINE ---
+            rad_aux = np.radians(aux_line_angle)
+            # We make the line long enough to cross the screen from side to side (length 800)
+            aux_p1_x = int(aux_line_x - 800 * np.cos(rad_aux))
+            aux_p1_y = int(aux_line_y - 800 * np.sin(rad_aux))
+            aux_p2_x = int(aux_line_x + 800 * np.cos(rad_aux))
+            aux_p2_y = int(aux_line_y + 800 * np.sin(rad_aux))
             
+            # --- VISUAL CORRECTION: The white and red outline now changes with the user ---
+            current_r = int(user_adjusted_radius)
+            cv2.circle(impact_frame, (int(x_pixel_bounce), int(y_pixel_bounce)), max(1, current_r - 3), (0, 0, 255), -1) 
+            cv2.circle(impact_frame, (int(x_pixel_bounce), int(y_pixel_bounce)), current_r, (255, 255, 255), 2) 
+
+            # Draw the new dashed alignment line (Cyan)
+            draw_dashed_line(impact_frame, (aux_p1_x, aux_p1_y), (aux_p2_x, aux_p2_y), (255, 255, 0), thickness=2)
+            cv2.circle(impact_frame, (aux_line_x, aux_line_y), 3, (255, 255, 0), -1) # Midpoint of the line
+
+            # Draw the green line of the impact trajectory between the centers
+            cv2.line(impact_frame, (piece_center_x, piece_center_y), (int(x_pixel_bounce), int(y_pixel_bounce)), (0, 255, 0), 2)
+
             # Overlay crosshair metrics and indicators
             cv2.line(impact_frame, (p1_x, p1_y), (p2_x, p2_y), (0, 255, 255), 2)
             cv2.line(impact_frame, (p3_x, p3_y), (p4_x, p4_y), (0, 255, 255), 2)
-            
             cv2.circle(impact_frame, (piece_center_x, piece_center_y), 4, (255, 255, 255), -1)
-            cv2.circle(impact_frame, (int(x_pixel_bounce), int(y_pixel_bounce)), 12, (0, 0, 255), -1) 
-            cv2.circle(impact_frame, (int(x_pixel_bounce), int(y_pixel_bounce)), 15, (255, 255, 255), 2) 
-            cv2.line(impact_frame, (piece_center_x, piece_center_y), (int(x_pixel_bounce), int(y_pixel_bounce)), (0, 255, 0), 2)
             
-            cv2.putText(impact_frame, "Adjust: W,A,S,D | Rotate: Q,E | ENTER: Finish", (15, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            # --- Geometric Grid Interface (2 Rows x 2 Columns) ---
+            # Row 1: Structural Alignment References
+            cell_A1 = "Adjust Crosshair: W, A, S, D | Rotate: Q, E"
+            cell_B1 = "Adjust Aux Line: 8, 2, 4, 6 | Rotate: 7, 9"
+            
+            # ROW 2: Final metric calibration and execution
+            cell_A2 = "Adjust Radius: U(-), I(+)"
+            cell_B2 = "ENTER: Finish & Compute Metrics"
+            
+            # ---- Rendering of Row 1 (Y: 440) ----
+            # Column A (Left, X: 70) | Column B (Right, X: 360)
+            cv2.putText(impact_frame, cell_A1, (70, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+            cv2.putText(impact_frame, cell_B1, (360, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+            
+            # ---- RENDERED ROW 2 (Y: 465) ----
+            # Column A (Left, X: 70) | Column B (Right, X: 360) -> Highlighted in yellow
+            cv2.putText(impact_frame, cell_A2, (70, 465), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+            cv2.putText(impact_frame, cell_B2, (360, 465), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
             cv2.imshow("GraviTraxLAB Hawk-Eye - Manual Calibration", impact_frame)
             
             # Capture standard keystroke values
             key = cv2.waitKey(0) & 0xFF
-
             if key == ord('w'): piece_center_y -= 1
             elif key == ord('s'): piece_center_y += 1
             elif key == ord('a'): piece_center_x -= 1
             elif key == ord('d'): piece_center_x += 1
             elif key == ord('q'): angle_deg -= 1
             elif key == ord('e'): angle_deg += 1
+            # --- NEW KEYBOARD COMMANDS FOR THE RADIO ---
+            elif key == ord('u'): user_adjusted_radius = max(1.0, user_adjusted_radius - 0.5) # Decrease radius
+            elif key == ord('i'): user_adjusted_radius += 0.5 # Increase radius 
+            # --- KEYBOARD CONTROLS FOR THE INDEPENDENT AUXILIARY LINE ---
+            elif key == ord('8'): aux_line_y -= 1  # Move auxiliary line up
+            elif key == ord('2'): aux_line_y += 1  # Move auxiliary line down
+            elif key == ord('4'): aux_line_x -= 1  # Move auxiliary line left
+            elif key == ord('6'): aux_line_x += 1  # Move auxiliary line right
+            elif key == ord('7'): aux_line_angle -= 1 # Rotate counterclockwise
+            elif key == ord('9'): aux_line_angle += 1 # Rotate clockwise
             elif key == 13 or key == 141: # Enter key codes
                 break
 
         # Map the center of the user-adjusted piece to the actual space in the video
         piece_center_x_real = piece_center_x * scale_x
         piece_center_y_real = piece_center_y * scale_y
+
+        # --- CRITICAL RECALCULATION OF METRIC CONVERSION BASED ON THE INTERACTIVE RADIUS ---
+        # We convert the screen radius to the original native space using scale_x
+        px_diameter_marble_adjusted = (user_adjusted_radius * 2) * scale_x
+        mm_per_pixel_real = REAL_MARBLE_DIAMETER_MM / px_diameter_marble_adjusted
 
         # Apply the actual Euclidean distance to undistorted pixels
         distance_pixels_real = np.sqrt((x_real_bounce - piece_center_x_real)**2 + (y_real_bounce - piece_center_y_real)**2)
@@ -284,8 +363,8 @@ if len(position_history) > 0:
         result_text = f"Pad Center Dist: {distance_mm:.3f} mm -> {'WITHIN RANGE' if within_range else 'OUT OF RANGE'}"
         time_text = f"Bounce Timestamp: {exact_seconds:.3f} s (Frame: {bounce_frame_index})"
         
-        cv2.putText(impact_frame, result_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0) if within_range else (0, 0, 255), 2) 
-        cv2.putText(impact_frame, time_text, (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2) 
+        cv2.putText(impact_frame, result_text, (20, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0) if within_range else (0, 0, 255), 2) 
+        cv2.putText(impact_frame, time_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2) 
 
         # Display operational status to the user using window messaging alerts
         root = tk.Tk() 
