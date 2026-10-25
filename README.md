@@ -82,8 +82,13 @@ Unlike standard RGB hardware models, this computer vision framework operates ent
 
 ## 📖 Academic & Methodology Background
 
-This software serves as the official implementation companion of **Chapter 4** of the technical textbook:  
+This software serves as the official implementation companion of **Chapter 4 of Part 3** of the technical textbook:  
 *Vector Field of the Velocity in Projectile Motion: Mathematical Modeling and Empirical Validation (Second Edition)* available on **Amazon KDP**.
+
+**Second Edition: Expanded and Revised**
+© 2026, Javier Hidalgo Fernández. All rights reserved.
+**ISBN:** 979-81-9022-984-4  
+**D.L.:** CO 1437-2026  
 
 For a deep dive into kinematic trajectory equations, spatial coordinate scaling matrix computations ($E = D_{real} / D_{pixel}$), and experimental engineering setups, please refer to the complete printed textbook edition.
 
